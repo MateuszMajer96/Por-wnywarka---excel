@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="style.css">
+    <title>Porównanie Funkcjonalności: Maspex - CEDC</title>
+    <style>
+
+    </style>
+  </head>
+  <body>
+    <h1>Wybierz plik do porównania</h1>
+    <input type="file" id="excel-file" accept=".xlsx,.xls,.csv" onchange="showTable()" />
+    <label for="excel-file" class="file-input">Wybierz plik</label>
+    <p id="file-name"></p>
+    <div id="table-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script>
+function addColumns() {
+  const table = document.getElementById("table-container").querySelector("table");
+  const rows = table.getElementsByTagName("tr");
+
+  for (let i = 2; i < rows.length; i++) {
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.name = `row-${i}-checkbox`;
+    checkbox.id = `row-${i}-checkbox`;
+
+    const textInput = document.createElement("textarea");
+    textInput.cols = 20;
+    textInput.rows = 3;
+    textInput.name = `row-${i}-text`;
+    textInput.id = `row-${i}-text`;
+
+    const cell1 = rows[i].insertCell(-1);
+    const cell2 = rows[i].insertCell(-1);
+    cell1.appendChild(checkbox);
+    cell2.appendChild(textInput);
+  }
+}
+      function showTable() {
+        const fileInput = document.getElementById("excel-file");
+        const fileName = fileInput.value.split("\\").pop();
+        document.getElementById("file-name").innerText = `Wybrany plik: ${fileName}`;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const htmlTable = XLSX.utils.sheet_to_html(worksheet);
+
+          document.getElementById("table-container").innerHTML = htmlTable;
+          addColumns();
+        };
+        reader.readAsArrayBuffer(fileInput.files[0]);
+      }
+      function exportTable() {
+  const table = document.getElementById("table-container").querySelector("table");
+  const rows = table.getElementsByTagName("tr");
+
+  const data = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = [];
+    const cells = rows[i].getElementsByTagName("td");
+
+    for (let j = 0; j < cells.length; j++) {
+      row.push(cells[j].textContent);
+    }
+
+    const checkbox = rows[i].querySelector("input[type=checkbox]");
+    const textInput = rows[i].querySelector("textarea");
+
+    if (checkbox !== null) {
+        row.push(checkbox.checked ? "TAK" : "NIE");
+    } else {
+        row.push("");
+    }
+
+    if (textInput !== null) {
+        row.push(textInput.value);
+    } else {
+        row.push("");
+    }
+
+    data.push(row);
+}
+
+  const worksheet = XLSX.utils.aoa_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Tabela");
+
+  const date = new Date();
+  const fileName = `tabela_${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}.xlsx`;
+  XLSX.writeFile(workbook, fileName);
+}
+    </script>
+    <button onclick="exportTable()">Eksportuj do Excela</button>
+  </body>
+</html>
